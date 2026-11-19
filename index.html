@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handschrift-Generator</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@400;700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #faf9fc;
+      color: #26334a;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      width: min(850px, 92%);
+      margin: 48px auto;
+    }
+
+    .card {
+      padding: clamp(22px, 5vw, 44px);
+      background: white;
+      border: 1px solid #e5e1ef;
+      border-radius: 22px;
+      box-shadow: 0 12px 40px #30205c12;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 6vw, 44px);
+    }
+
+    .intro {
+      color: #697187;
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d9d5e4;
+      border-radius: 12px;
+      font: inherit;
+      background: white;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 13px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #7658d6;
+      color: white;
+    }
+
+    .secondary {
+      background: #f4f0ff;
+      color: #26334a;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .preview {
+      min-height: 160px;
+      margin-top: 22px;
+      padding: 24px;
+      border: 1px dashed #c9c1dd;
+      border-radius: 16px;
+      background: #fffefa;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 34px;
+      line-height: 1.45;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .message {
+      color: #a23d3d;
+      margin-top: 14px;
+    }
+
+    .small {
+      color: #697187;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <section class="card" id="loginView">
+      <h1>Deine Worte. Deine Handschrift.</h1>
+      <p class="intro">Melde dich mit dem Zugang an, den du erhalten hast.</p>
+
+      <label for="email">E-Mail-Adresse</label>
+      <input
+        id="email"
+        type="email"
+        autocomplete="username"
+        placeholder="name@beispiel.de"
+      >
+
+      <label for="password">Passwort</label>
+      <input
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Dein Passwort"
+      >
+
+      <div class="row">
+        <button class="primary" id="loginButton">Anmelden</button>
+      </div>
+
+      <p class="message" id="loginMessage"></p>
+    </section>
+
+    <section class="card hidden" id="appView">
+      <h1>Handschrift-Generator</h1>
+      <p class="intro">
+        Tippe deinen Text ein, wähle einen Stil und lade die Vorschau herunter.
+      </p>
+
+      <label for="textInput">Dein Text</label>
+      <textarea id="textInput">Dein Text sieht jetzt wie Handschrift aus.</textarea>
+
+      <label for="fontSelect">Handschrift-Stil</label>
+      <select id="fontSelect">
+        <option value="'Patrick Hand', cursive">Locker</option>
+        <option value="'Caveat', cursive">Schwungvoll</option>
+        <option value="'Kalam', cursive">Wie mit dem Stift</option>
+      </select>
+
+      <div class="preview" id="preview"></div>
+
+      <div class="row">
+        <button class="primary" id="downloadButton">
+          Als Bild herunterladen
+        </button>
+        <button class="secondary" id="logoutButton">
+          Abmelden
+        </button>
+      </div>
+
+      <p class="small">Die Vorschau wird in deinem Browser erstellt.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "DEINE_SUPABASE_URL";
+    const SUPABASE_PUBLISHABLE_KEY = "DEIN_PUBLISHABLE_KEY";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const loginView = document.querySelector("#loginView");
+    const appView = document.querySelector("#appView");
+    const loginMessage = document.querySelector("#loginMessage");
+    const textInput = document.querySelector("#textInput");
+    const fontSelect = document.querySelector("#fontSelect");
+    const preview = document.querySelector("#preview");
+
+    function showUser(isLoggedIn) {
+      loginView.classList.toggle("hidden", isLoggedIn);
+      appView.classList.toggle("hidden", !isLoggedIn);
+    }
+
+    function updatePreview() {
+      preview.textContent =
+        textInput.value || "Deine Vorschau erscheint hier.";
+      preview.style.fontFamily = fontSelect.value;
+    }
+
+    textInput.addEventListener("input", updatePreview);
+    fontSelect.addEventListener("change", updatePreview);
+    updatePreview();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    showUser(Boolean(session));
+
+    supabase.auth.onAuthStateChange((_event, newSession) => {
+      showUser(Boolean(newSession));
+    });
+
+    document.querySelector("#loginButton").addEventListener("click", async () => {
+      loginMessage.textContent = "";
+
+      const email = document.querySelector("#email").value.trim();
+      const password = document.querySelector("#password").value;
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        loginMessage.textContent =
+          "Anmeldung fehlgeschlagen. Prüfe E-Mail und Passwort.";
+      }
+    });
+
+    document.querySelector("#logoutButton").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+    });
+
+    document.querySelector("#downloadButton").addEventListener("click", async () => {
+      await document.fonts.ready;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const padding = 40;
+      const fontSize = 38;
+      const lines = preview.textContent.split("\n");
+      const lineHeight = 56;
+
+      ctx.font = `${fontSize}px ${fontSelect.value}`;
+
+      const textWidth = Math.max(
+        500,
+        ...lines.map(line => ctx.measureText(line).width)
+      );
+
+      canvas.width = textWidth + padding * 2;
+      canvas.height = Math.max(
+        180,
+        lines.length * lineHeight + padding * 2
+      );
+
+      ctx.fillStyle = "#fffefa";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = `${fontSize}px ${fontSelect.value}`;
+      ctx.fillStyle = "#26334a";
+      ctx.textBaseline = "top";
+
+      lines.forEach((line, index) => {
+        ctx.fillText(line, padding, padding + index * lineHeight);
+      });
+
+      const link = document.createElement("a");
+      link.download = "handschrift.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+  </script>
+</body>
+</html>
